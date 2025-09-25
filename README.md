@@ -21,7 +21,7 @@ Ensure both dependencies are started before this resource.
 
 ## Installation
 
-1. Clone or download the resource into your server's `resources` directory and rename the folder to `outlaw_placeable` if needed.
+1. Clone or download the repository into your server's `resources` directory. The resource folder is already named `outlaw_placeable`.
 2. Add the resource to your `server.cfg` after `ox_lib` and `ox_inventory`:
 
    ```cfg
@@ -30,8 +30,8 @@ Ensure both dependencies are started before this resource.
    ensure outlaw_placeable
    ```
 
-3. Configure your placeable items in `shared/config.lua` under `Config.Placeables`. Each entry requires a model hash (backticked for automatic joaat) and optional overrides such as custom rotation step, distance limits, or localisation strings.
-4. Add matching items in `ox_inventory/data/items.lua`. The repository includes `data/example_items.lua` with two sample entries. Copy the structure into your inventory config, ensuring each item declares the export:
+3. Configure your placeable items in `outlaw_placeable/shared/config.lua` under `Config.Placeables`. Each entry requires a model hash (backticked for automatic joaat) and optional overrides such as custom rotation step, distance limits, or localisation strings.
+4. Add matching items in `ox_inventory/data/items.lua`. The repository includes `outlaw_placeable/data/example_items.lua` with two sample entries. Copy the structure into your inventory config, ensuring each item declares the export:
 
    ```lua
    placeable_crate = {
@@ -71,7 +71,7 @@ Each placeable item can override distance limits, rotation step, forward mode (c
 
 ## Server Hooks
 
-`server/placeable.lua` exposes a basic event and export:
+`outlaw_placeable/server/placeable.lua` exposes a basic event and export:
 
 - `outlaw_placeable:placed`: Fired when a player confirms placement. Payload includes item name, coords, heading and model.
 - `outlaw_placeable:previewCancelled`: Fired when a player cancels the preview.
@@ -81,7 +81,7 @@ Use these hooks to implement persistence (KVP or database) or logging integratio
 
 ## Custom Props
 
-Place any custom models inside the `stream/` directory. Ensure each prop includes proper collision meshes; the physics settle routine relies on valid collision to keep the object above the map.
+Place any custom models inside the `outlaw_placeable/stream/` directory. Ensure each prop includes proper collision meshes; the physics settle routine relies on valid collision to keep the object above the map.
 
 ## Troubleshooting
 
