@@ -78,6 +78,10 @@ local forwardBias = Config.ForwardBiasMeters or 0.0
 local controls = Config.Controls or {}
 local rotateStep = Config.RotateStep or 5.0
 local freezePlaced = Config.FreezePlacedObjects ~= false
+local pickupControl = controls.pickup or 38
+
+local pickupPromptText = 'Press ~INPUT_PICKUP~ to collect'
+local isPickingUp = false
 
 ---------------------------------------------------------------------
 -- Utils
@@ -100,6 +104,73 @@ end
 
 local function wasControlJustPressed(control)
     return IsControlJustPressed(0, control) or IsDisabledControlJustPressed(0, control)
+end
+
+local function draw3DText(x, y, z, text)
+    local onScreen, screenX, screenY = World3dToScreen2d(x, y, z)
+    if not onScreen then return end
+
+    SetTextScale(0.32, 0.32)
+    SetTextFont(4)
+    SetTextProportional(true)
+    SetTextColour(255, 255, 255, 215)
+    SetTextCentre(true)
+    SetTextOutline()
+
+    BeginTextCommandDisplayText('STRING')
+    AddTextComponentSubstringPlayerName(text)
+    EndTextCommandDisplayText(screenX, screenY)
+end
+
+local function playPickupAnimation(ped)
+    local dict = 'anim@mp_snowball'
+    RequestAnimDict(dict)
+    while not HasAnimDictLoaded(dict) do Wait(0) end
+
+    TaskPlayAnim(ped, dict, 'pickup_snowball', 8.0, -8.0, 700, 48, 0.0, false, false, false)
+    Wait(550)
+    ClearPedTasks(ped)
+    RemoveAnimDict(dict)
+end
+
+local function attemptPickup(info, data, object, coords)
+    if isPickingUp then return end
+    if not info or not data or not object or not DoesEntityExist(object) then return end
+    if not info.item then return end
+
+    local ped = PlayerPedId()
+    if not DoesEntityExist(ped) or IsEntityDead(ped) then return end
+    if IsPedInAnyVehicle(ped, false) then return end
+
+    local pedCoords = GetEntityCoords(ped)
+    local px, py, pz = pedCoords.x, pedCoords.y, pedCoords.z
+    local ox, oy, oz = coords.x, coords.y, coords.z
+    local dist = math.sqrt((px - ox) * (px - ox) + (py - oy) * (py - oy) + (pz - oz) * (pz - oz))
+    local interactDist = data.interactDistance or 2.0
+    if dist > interactDist + 0.25 then return end
+
+    local netId = info.netId
+    if not netId or netId == 0 then
+        netId = NetworkGetNetworkIdFromEntity(object)
+    end
+
+    if not netId or netId == 0 then
+        notify('Impossible de récupérer cet objet pour le moment.', 'error')
+        return
+    end
+
+    info.netId = netId
+
+    isPickingUp = true
+
+    TaskTurnPedToFaceCoord(ped, ox, oy, oz, 500)
+    Wait(150)
+    playPickupAnimation(ped)
+
+    TriggerServerEvent('outlaw_placeables:pickup', netId, info.item)
+
+    Wait(200)
+    isPickingUp = false
 end
 
 local function requestModel(model)
@@ -980,6 +1051,63 @@ end)
 
 RegisterNetEvent('outlaw_placeables:notify', function(message, type)
     notify(message, type)
+end)
+
+---------------------------------------------------------------------
+-- Manual pickup prompt
+---------------------------------------------------------------------
+
+CreateThread(function()
+    while true do
+        if not next(trackedObjects) then
+            Wait(400)
+        else
+            local ped = PlayerPedId()
+            if not DoesEntityExist(ped) or IsEntityDead(ped) then
+                Wait(400)
+            else
+                local pedCoords = GetEntityCoords(ped)
+                local px, py, pz = pedCoords.x, pedCoords.y, pedCoords.z
+                local nearestInfo, nearestData, nearestObject, nearestCoords, nearestDistance
+
+                for _, info in pairs(trackedObjects) do
+                    local object = info.entity
+                    if object and DoesEntityExist(object) and info.item then
+                        local data = Config.Placeables and Config.Placeables[info.item]
+                        if data then
+                            local objectCoords = GetEntityCoords(object)
+                            local ox, oy, oz = objectCoords.x, objectCoords.y, objectCoords.z
+                            local dx, dy, dz = px - ox, py - oy, pz - oz
+                            local dist = math.sqrt(dx * dx + dy * dy + dz * dz)
+                            local interact = data.interactDistance or 2.0
+
+                            if dist <= interact and (not nearestDistance or dist < nearestDistance) then
+                                nearestDistance = dist
+                                nearestInfo = info
+                                nearestData = data
+                                nearestObject = object
+                                nearestCoords = objectCoords
+                            end
+                        end
+                    end
+                end
+
+                if nearestInfo and nearestObject and nearestCoords then
+                    local prompt = nearestData.pickupPrompt or pickupPromptText
+                    local offset = nearestData.pickupTextOffset or 0.1
+                    draw3DText(nearestCoords.x, nearestCoords.y, nearestCoords.z + offset, prompt)
+
+                    if wasControlJustPressed(pickupControl) then
+                        attemptPickup(nearestInfo, nearestData, nearestObject, nearestCoords)
+                    end
+
+                    Wait(0)
+                else
+                    Wait(150)
+                end
+            end
+        end
+    end
 end)
 
 ---------------------------------------------------------------------

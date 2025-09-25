@@ -38,14 +38,19 @@ Config.Controls = {
     rotateLeft = 44,    -- Q
     rotateRight = 38,   -- E
     distIncrease = 241, -- MWUP
-    distDecrease = 242  -- MWDOWN
+    distDecrease = 242, -- MWDOWN
+    pickup = 38         -- E
 }
 
 -- Items plaçables
 Config.Placeables = {
     coke2 = {
         label = 'Paquet de coke',
-        models = { 'prop_tool_blowtorch' },
+        models = {
+            'prop_bzzz_drugs_coke001',
+            'prop_bzzz_drugs_coke002',
+            'prop_bzzz_drugs_coke003'
+        },
         icon = 'fa-solid fa-box',
         interactDistance = 2.0,
         pickupLabel = 'Ramasser le paquet',
