@@ -45,7 +45,11 @@ Config.Controls = {
 Config.Placeables = {
     coke2 = {
         label = 'Paquet de coke',
-        models = { 'prop_tool_blowtorch' },
+        models = {
+            'prop_bzzz_drugs_coke001',
+            'prop_bzzz_drugs_coke002',
+            'prop_bzzz_drugs_coke003'
+        },
         icon = 'fa-solid fa-box',
         interactDistance = 2.0,
         pickupLabel = 'Ramasser le paquet',
