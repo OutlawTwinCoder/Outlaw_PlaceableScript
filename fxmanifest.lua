@@ -7,6 +7,13 @@ author 'Outlaw — placeables without DB'
 version '1.2.2'
 description 'Camera-centered preview with pure camera-ray scrolling (no ped clamp), snap-to-ground.'
 
+files {
+    'stream/*.ytyp',
+    'stream/*.ydr'
+}
+
+data_file 'DLC_ITYP_REQUEST' 'stream/prop_bzzz_drugs_coke.ytyp'
+
 shared_scripts {
     'config.lua',
     'NativeProps/*.lua'
