@@ -26,7 +26,10 @@ client_scripts {
 
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
-    'server/*.lua'
+    'server/persistence.lua',
+    'server/trunk.lua',
+    'server/inventory.lua',
+    'server/main.lua'
 }
 
 dependencies {
