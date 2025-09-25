@@ -1,0 +1,17 @@
+CREATE TABLE IF NOT EXISTS `outlaw_placeables` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `model` VARCHAR(64) NOT NULL,
+  `x` FLOAT NOT NULL,
+  `y` FLOAT NOT NULL,
+  `z` FLOAT NOT NULL,
+  `rx` FLOAT NOT NULL DEFAULT 0,
+  `ry` FLOAT NOT NULL DEFAULT 0,
+  `rz` FLOAT NOT NULL DEFAULT 0,
+  `is_trunk` TINYINT(1) NOT NULL DEFAULT 0,
+  `owner` VARCHAR(64) NULL,
+  `meta` JSON NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  INDEX `idx_created_at` (`created_at`),
+  INDEX `idx_owner` (`owner`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
