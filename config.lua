@@ -25,6 +25,7 @@ Config.AttachmentBreak = {
     checkInterval = 300,     -- intervalle (ms) entre deux vérifications
     minCollisionSpeed = 12.0,-- vitesse (m/s) minimale avant de considérer un choc
     minSpeedDelta = 6.0,     -- variation de vitesse requise pour détacher après un choc
+    minVectorSpeedDelta = 8.0,-- variation vectorielle (changement de direction) minimale avant détachement
     requireCollision = true, -- nécessite HasEntityCollidedWithAnything avant de détacher sur variation de vitesse
     pitchLimit = 65.0,       -- angle (°) de tangage maximum avant détachement
     rollLimit = 80.0,        -- angle (°) de roulis maximum avant détachement

@@ -53,6 +53,7 @@ local function resolveAttachmentBreak(itemName)
         checkInterval = tonumber(base.checkInterval) or 300,
         minCollisionSpeed = tonumber(base.minCollisionSpeed or base.collisionSpeed),
         minSpeedDelta = tonumber(base.minSpeedDelta or base.speedDelta),
+        minVectorSpeedDelta = tonumber(base.minVectorSpeedDelta or base.vectorSpeedDelta),
         requireCollision = base.requireCollision ~= false,
         pitchLimit = base.pitchLimit and tonumber(base.pitchLimit) or nil,
         rollLimit = base.rollLimit and tonumber(base.rollLimit) or nil,
@@ -61,6 +62,7 @@ local function resolveAttachmentBreak(itemName)
 
     if cfg.minCollisionSpeed and cfg.minCollisionSpeed < 0.0 then cfg.minCollisionSpeed = 0.0 end
     if cfg.minSpeedDelta and cfg.minSpeedDelta < 0.0 then cfg.minSpeedDelta = 0.0 end
+    if cfg.minVectorSpeedDelta and cfg.minVectorSpeedDelta < 0.0 then cfg.minVectorSpeedDelta = 0.0 end
     if cfg.upsideDownTime and cfg.upsideDownTime < 0 then cfg.upsideDownTime = 0 end
 
     return cfg
@@ -253,6 +255,8 @@ local function tryAttachToEntity(info)
     info.attachedTo = attach.netId
     info.attachFailTime = nil
     info.lastTargetSpeed = velocityMagnitude(target)
+    local vx, vy, vz = table.unpack(GetEntityVelocity(target))
+    info.lastTargetVelocity = vector3(vx, vy, vz)
     info.lastBreakCheck = GetGameTimer()
     info.upsideDownStart = nil
     maybeClearRecovery(info, true)
@@ -289,6 +293,7 @@ local function dropObjectToGround(info)
     info.shouldFreeze = freezeAfter
     info.attachFailTime = nil
     info.lastTargetSpeed = nil
+    info.lastTargetVelocity = nil
     info.lastBreakCheck = nil
     info.upsideDownStart = nil
     maybeClearRecovery(info, true)
@@ -338,6 +343,8 @@ local function checkAttachmentBreak(info, target)
 
     local speed = velocityMagnitude(target)
     local lastSpeed = info.lastTargetSpeed or speed
+    local vx, vy, vz = table.unpack(GetEntityVelocity(target))
+    local lastVelocity = info.lastTargetVelocity
     local speedDelta = math.abs(speed - lastSpeed)
     local minCollisionSpeed = cfg.minCollisionSpeed or 0.0
 
@@ -347,15 +354,32 @@ local function checkAttachmentBreak(info, target)
                 detach = true
             end
         end
-    elseif not detach and minCollisionSpeed > 0.0 then
+    end
+
+    if not detach and minCollisionSpeed > 0.0 then
         if (lastSpeed >= minCollisionSpeed or speed >= minCollisionSpeed) and collided then
             detach = true
         end
-    elseif not detach and cfg.requireCollision and collided then
+    end
+
+    if not detach and cfg.minVectorSpeedDelta and cfg.minVectorSpeedDelta > 0.0 and lastVelocity then
+        local dvx = vx - lastVelocity.x
+        local dvy = vy - lastVelocity.y
+        local dvz = vz - lastVelocity.z
+        local vectorDelta = math.sqrt(dvx * dvx + dvy * dvy + dvz * dvz)
+        if vectorDelta >= cfg.minVectorSpeedDelta then
+            if not cfg.requireCollision or collided or speed >= minCollisionSpeed or lastSpeed >= minCollisionSpeed then
+                detach = true
+            end
+        end
+    end
+
+    if not detach and cfg.requireCollision and collided then
         detach = true
     end
 
     info.lastTargetSpeed = speed
+    info.lastTargetVelocity = vector3(vx, vy, vz)
     info.lastBreakCheck = now
 
     if detach then
