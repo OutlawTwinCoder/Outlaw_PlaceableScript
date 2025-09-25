@@ -38,7 +38,8 @@ Config.Controls = {
     rotateLeft = 44,    -- Q
     rotateRight = 38,   -- E
     distIncrease = 241, -- MWUP
-    distDecrease = 242  -- MWDOWN
+    distDecrease = 242, -- MWDOWN
+    pickup = 38         -- E
 }
 
 -- Items plaçables
