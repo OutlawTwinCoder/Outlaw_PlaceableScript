@@ -1,94 +1,65 @@
 # Outlaw Placeable
 
-Placeable prop system for FiveM using **ox_inventory** and **ox_lib**. Players can preview a prop in front of them, rotate it, adjust distance, and confirm placement with a robust settle routine that prevents the prop from falling through the map.
+A complete placeable-item system for FiveM inspired by KuzQuality scripts. It supports camera-based preview, car trunk fitting, persistence, drop/throw modes and multiple inventory frameworks.
 
 ## Features
 
-- Modern ox_inventory integration through client exports (no RegisterUsableItem).
-- Camera-based preview with ghost entity, rotation (Q/E) and optional distance scrolling.
-- Validation for distance, slope and invalid surfaces.
-- Physics settle routine to avoid props falling through the world.
-- Config-driven item definitions and behaviour overrides.
-- Example item definitions for ox_inventory.
-- Server-side logging export and hooks ready for persistence.
-
-## Requirements
-
-- [ox_lib](https://github.com/overextended/ox_lib)
-- [ox_inventory](https://github.com/overextended/ox_inventory)
-
-Ensure both dependencies are started before this resource.
+- Place any configured inventory item as a physical prop, or enable the fallback to allow every item to become placeable.
+- Camera-driven preview with distance scroll, rotation snapping and green/red validation feedback.
+- Optional drop/throw placement (toggle with the drop key) where the prop stays dynamic instead of freezing, or can be thrown using the player momentum.
+- Automatic trunk handling with capacity per vehicle class and grid fitting to avoid overlapping.
+- Anti-stacking checks on world placements to prevent exploits.
+- Persistence layer (optional) to respawn important props after a server restart.
+- Integrations for `ox_inventory`, `qs-inventory`, `qb-inventory` or a standalone fallback.
+- Optional `ox_target` entries for collecting, inspecting and staff removal.
+- Localised notifications (FR/EN provided).
 
 ## Installation
 
-1. Clone or download the repository into your server's `resources` directory. The resource folder is already named `outlaw_placeable`.
-2. Add the resource to your `server.cfg` after `ox_lib` and `ox_inventory`:
-
-   ```cfg
-   ensure ox_lib
-   ensure ox_inventory
-   ensure outlaw_placeable
-   ```
-
-3. Configure your placeable items in `outlaw_placeable/shared/config.lua` under `Config.Placeables`. Each entry requires a model hash (backticked for automatic joaat) and optional overrides such as custom rotation step, distance limits, or localisation strings.
-4. Add matching items in `ox_inventory/data/items.lua`. The repository includes `outlaw_placeable/data/example_items.lua` with two sample entries. Copy the structure into your inventory config, ensuring each item declares the export:
-
-   ```lua
-   placeable_crate = {
-       label = 'Utility Crate',
-       weight = 1000,
-       stack = false,
-       client = {
-           export = 'outlaw_placeable.placeable_item'
-       }
-   }
-   ```
-
-   Optionally add a custom `buttons` table to display a *Place* button in the inventory UI.
-
-## Usage
-
-- Use the configured item in ox_inventory to start the preview.
-- Rotate with **Q/E**, confirm with **Left Mouse Button**, cancel with **Right Mouse Button**.
-- Scroll the mouse wheel to adjust distance when enabled in the config.
-- On confirmation, the script will consume the item via `exports.ox_inventory:useItem` and spawn the prop with a physics settle routine.
-
-Cancelling the preview keeps the item in the player's inventory. If the client disconnects or the resource stops, any preview entity is cleaned up automatically.
+1. Place the resource in your `resources/` folder and ensure it is started after your inventory system.
+2. Import [`sql/outlaw_placeable.sql`](sql/outlaw_placeable.sql) into your database if you enable persistence.
+3. Configure `config.lua` for distances, trunk settings, persistence and item definitions.
+4. Add the resource to your server configuration: `ensure Outlaw_Placeable`.
 
 ## Configuration
 
-Key options in `shared/config.lua`:
+`config.lua` exposes:
 
-- `Config.Distance`: Default distance limits and whether scrolling is enabled.
-- `Config.RotationStep`: Global rotation step in degrees.
-- `Config.MinPedDistance`: Minimum distance between player and prop.
-- `Config.MinSurfaceNormalZ`: Minimum surface normal Z to consider a surface valid.
-- `Config.Settle`: Parameters for the freeze and nudge routine preventing props from falling through the world.
-- `Config.Callbacks`: Optional hooks (`OnPreviewStart`, `OnPreviewEnd`, `OnPlaced`, `OnPickup`) that can be assigned to custom functions.
-- `Config.PersistenceMode`: Stub for future persistence modes (volatile by default).
+- `Distances` – minimum/maximum placement range and safety distances.
+- `Preview` – mode (`camera` or `ped`), rotation steps and alpha blending values.
+- `Controls` – keybinds for confirm, cancel, rotation, drop toggle and interaction.
+- `MakeEverythingPlaceable` – enable to make all inventory items spawn the fallback prop.
+- `AntiStacking` – enforce minimum spacing between world placements.
+- `FreezePlacedObjects` – freeze props after settling.
+- `Persistence` – enable global persistence or per-item (`persistent = true`).
+- `InventoryProvider` – choose between `ox`, `qs`, `qb` or `standalone`.
+- `Trunk` – toggle trunk logic, capacity per class and candidate bones.
+- `Items` – define item-specific models, permissions and metadata.
+- `Commands` & `Security` – command names and ACE required for cleanup.
 
-Each placeable item can override distance limits, rotation step, forward mode (camera vs. ped), minimum distance and allowed surfaces.
+## Commands
 
-## Server Hooks
+- `/place <item>` – start placement preview for an inventory item.
+- `/place_cancel` – cancel the current preview.
+- `/place_remove_near` – request removal of the closest owned placement.
+- `/place_cleanup_all` – staff-only command to clean every placement (requires ACE defined in `Config.Security.staffAce`).
 
-`outlaw_placeable/server/placeable.lua` exposes a basic event and export:
+Default keybinds are registered via `RegisterKeyMapping`: `G` to start `/place`, `BACKSPACE` to cancel and `H` to remove a nearby prop. You can remap them in FiveM settings.
 
-- `outlaw_placeable:placed`: Fired when a player confirms placement. Payload includes item name, coords, heading and model.
-- `outlaw_placeable:previewCancelled`: Fired when a player cancels the preview.
-- `exports.getPlacements()`: Returns a table with all placements recorded during the current session (volatile).
+## Events & Exports
 
-Use these hooks to implement persistence (KVP or database) or logging integrations.
+The resource exposes client/server events for starting placement and removing props. It also registers ox_target options when the dependency is running. Developers can hook into `outlaw_placeables:placementCreated` and `outlaw_placeables:placementRemoved` events to extend behaviour.
 
-## Custom Props
+## Inventory integrations
 
-Place any custom models inside the `outlaw_placeable/stream/` directory. Ensure each prop includes proper collision meshes; the physics settle routine relies on valid collision to keep the object above the map.
+Set `Config.InventoryProvider` to match your framework. The resource automatically registers usable items via the provider and handles add/remove logic. When using `standalone`, it will not touch the player inventory – you must manage item consumption manually.
+
+## Persistence
+
+When persistence is enabled globally or for a specific item, the server inserts placement records into the `outlaw_placeables` table and respawns them on resource start. Removing a persisted placement cleans up its database row.
 
 ## Troubleshooting
 
-- If the item is consumed instantly, verify that the item definition calls the `outlaw_placeable.placeable_item` export and does **not** use `RegisterUsableItem`.
-- For jittery previews, double-check that no other scripts freeze or teleport the player during preview.
-- If props clip through the ground, ensure the model has collision data and adjust the settle `epsilon` or `lockMs` in the config.
-
-## Credits
-
-Created by Outlaw Scripts. Inspired by the need for reliable prop placement with ox_inventory.
+- Ensure the prop models you configure are available. Stream custom YDR/YTYP assets alongside the resource if necessary.
+- If `ox_target` is disabled, the script falls back to a 3D prompt using the collect key (`Config.Controls.collect`).
+- Use the ACE permission configured in `Config.Security.staffAce` to allow staff to cleanup all objects.

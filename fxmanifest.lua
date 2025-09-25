@@ -2,14 +2,25 @@ fx_version 'cerulean'
 game 'gta5'
 lua54 'yes'
 
-name 'Outlaw_PlableScript'
-author 'Outlaw — placeables without DB'
-version '1.2.2'
-description 'Camera-centered preview with pure camera-ray scrolling (no ped clamp), snap-to-ground.'
+name 'Outlaw_Placeable'
+author 'Outlaw'
+version '2.0.0'
+description 'Advanced placeable items with preview, trunk handling, persistence and inventory integrations.'
+
+files {
+    'stream/*.ytyp',
+    'stream/*.ydr',
+    'sql/outlaw_placeable.sql'
+}
+
+data_file 'DLC_ITYP_REQUEST' 'stream/prop_bzzz_drugs_coke.ytyp'
 
 shared_scripts {
     'config.lua',
-    'NativeProps/*.lua'
+    'locales/*.lua',
+    'NativeProps/*.lua',
+    'shared/locale.lua',
+    'shared/inventory.lua'
 }
 
 client_scripts {
@@ -17,12 +28,13 @@ client_scripts {
 }
 
 server_scripts {
-    '@ox_lib/init.lua',
     'server/main.lua'
 }
 
-dependencies {
+optional_dependencies {
     'ox_lib',
     'ox_inventory',
-    'ox_target'
+    'ox_target',
+    'qs-inventory',
+    'qb-inventory'
 }

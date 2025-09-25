@@ -1,0 +1,14 @@
+CREATE TABLE IF NOT EXISTS `outlaw_placeables` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `model` VARCHAR(120) NOT NULL,
+    `item` VARCHAR(60) NOT NULL,
+    `coords` TEXT NOT NULL,
+    `rotation` TEXT NOT NULL,
+    `isTrunk` TINYINT(1) NOT NULL DEFAULT 0,
+    `trunkId` VARCHAR(64) DEFAULT NULL,
+    `trunkSlot` INT DEFAULT NULL,
+    `owner` VARCHAR(64) DEFAULT NULL,
+    `metadata` TEXT DEFAULT NULL,
+    `createdAt` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
